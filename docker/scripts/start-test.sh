@@ -1,0 +1,1 @@
+lein run test --nodes jepsen-n1,jepsen-n2,jepsen-n3 --time-limit 5 --concurrency 5 --version v0.8.77 --packages_dir=/var/jepsen/shared/packages/

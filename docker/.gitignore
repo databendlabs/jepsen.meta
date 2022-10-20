@@ -1,0 +1,6 @@
+secret/*
+docker-compose.yml
+node/jepsen/
+control/jepsen/
+packages/*
+secret/*

@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Waiting docker start up and cp packages into shared
+docker cp packages jepsen-n1:/var/jepsen/shared/
+
+docker exec -it jepsen-control bash

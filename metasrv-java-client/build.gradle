@@ -1,0 +1,90 @@
+group 'com.metasrv.client'
+version '1.0'
+
+apply plugin: 'java'
+apply plugin: 'com.google.protobuf'
+
+sourceCompatibility = 1.8
+
+buildscript {
+    repositories {
+        mavenCentral()
+
+        // Add for grpc
+        dependencies {
+            classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.18'
+        }
+    }
+}
+
+repositories {
+    maven { // The google mirror is less flaky than mavenCentral()
+        url "https://maven-central.storage-download.googleapis.com/maven2/" }    
+    mavenCentral()
+    mavenLocal()
+}
+
+def grpcVersion = '1.48.0'
+def protobufVersion = '3.21.1'
+def protocVersion = protobufVersion
+def gsonVersion = '2.9.0'
+
+dependencies {
+    //compile group: 'com.google.code.gson', name: 'gson', version: ${gsonVersion}
+    //implementation 'com.google.code.gson:gson:${gsonVersion}'
+    implementation 'com.google.code.gson:gson:${gsonVersion}'
+
+    implementation "io.grpc:grpc-protobuf:${grpcVersion}"
+    implementation "io.grpc:grpc-stub:${grpcVersion}"
+    compileOnly "org.apache.tomcat:annotations-api:6.0.53"
+
+    // examples/advanced need this for JsonFormat
+    implementation "com.google.protobuf:protobuf-java-util:${protobufVersion}"
+
+    runtimeOnly "io.grpc:grpc-netty-shaded:${grpcVersion}"
+
+    testImplementation "io.grpc:grpc-testing:${grpcVersion}"
+    testImplementation "junit:junit:4.12"
+    testImplementation "org.mockito:mockito-core:3.4.0"
+}
+
+clean {
+    delete protobuf.generatedFilesBaseDir
+}
+
+tasks.withType(Copy).all {
+    duplicatesStrategy 'exclude'
+}
+
+processResources {
+    duplicatesStrategy 'exclude'
+}
+
+protobuf {
+    protoc { artifact = "com.google.protobuf:protoc:${protocVersion}" }
+    plugins {
+        grpc { artifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}" }
+    }    
+    generateProtoTasks {
+        all()*.plugins {
+            grpc {}
+        }
+    }
+
+    generatedFilesBaseDir = "$projectDir/src/generated"
+}
+
+sourceSets {
+    main {
+        proto {
+            // In addition to the default 'src/main/proto'
+            srcDir 'src/main/proto'
+            include '**/*.protodevel'
+        }
+    }
+}
+
+task(runMetasrvClient, dependsOn: 'classes', type: JavaExec) {
+    main = 'MetasrvClient.MetasrvClient'
+    classpath = sourceSets.main.runtimeClasspath
+}
