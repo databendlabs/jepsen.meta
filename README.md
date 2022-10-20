@@ -22,7 +22,7 @@ run `cd docker; ./bin/up`, it will start two types of container:
 * node container: which will run the meta service, by default there will be 3 node container, if need to change the node count, modify the `bin/up` script.
 * console container: which will run the jepsen test script.
 
-After the container, run `docker ps` will see 4 containers:
+After start the containers, run `docker ps` will see 4 containers:
 ```
 $ docker ps
 CONTAINER ID   IMAGE                      COMMAND                  CREATED          STATUS          PORTS                                                                                  NAMES
