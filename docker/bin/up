@@ -149,6 +149,7 @@ if [ -z "${DEV}" ]; then
     (
         (cd ..; tar "${exclude_control_params[@]}" -cf - .)  | tar Cxf ./control/jepsen -
         cp ../resources/* ./control/jepsen/resources
+        cp -r ./scripts ./control/jepsen/scripts
     )
 
     # Copy packages to node

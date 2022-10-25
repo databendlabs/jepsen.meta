@@ -1,0 +1,77 @@
+#!/bin/bash
+
+VERSION=""
+NODE_COUNT=3
+TIME_LIMIT=5
+CONCURRENCY=5
+HELP=0
+POSITIONAL=()
+
+while [[ $# -gt 0 ]]
+do
+    key="$1"
+
+    case $key in
+        --help)
+            HELP=1
+            shift # past argument
+            ;;
+        --time-limit)
+            TIME_LIMIT=$2
+            shift # past argument
+            shift # past value
+            ;;
+        --concurrency)
+            CONCURRENCY=$2
+            shift # past argument
+            shift # past value
+            ;;
+        --node-count)
+            NODE_COUNT=$2
+            shift # past argument
+            shift # past value
+            ;;
+        --version)
+            VERSION=$2
+            shift # past argument
+            shift # past value
+            ;;
+        *)
+            POSITIONAL+=("$1")
+            ERROR "unknown option $1"
+            shift # past argument
+            ;;
+    esac
+done
+
+if [ "${#POSITIONAL[@]}" -gt 0 ]; then
+  set -- "${POSITIONAL[@]}" # restore positional parameters
+fi
+
+if [ "${HELP}" -eq 1 ]; then
+    echo "Usage: $0 [OPTION]"
+    echo "  --help                                                Display this message"
+    echo "  --node-count                                          Test Node count(Default 3)"
+    echo "  --time-limit                                          Test time limit(Default 5)"
+    echo "  --concurrency                                         Test concurrency(Default 5)"
+    echo "  --version                                             Test databend package version"
+    exit 0
+fi
+
+if [ -z "${VERSION}" ]; then
+  echo "Version MUST NOT be empty"
+  exit -1
+fi
+
+NODE_LIST=""
+# For each node
+for ((n=1;n<=NODE_COUNT;n++)); do
+  if [[ -n "${NODE_LIST}" ]]; then
+    NODE_LIST="${NODE_LIST},"
+  fi
+  NODE_LIST="${NODE_LIST}jepsen-n${n}"
+done
+
+echo "node list:${NODE_LIST}"
+
+lein run test --nodes ${NODE_LIST} --time-limit ${TIME_LIMIT} --concurrency ${CONCURRENCY} --version ${VERSION} --packages_dir=/var/jepsen/shared/packages/

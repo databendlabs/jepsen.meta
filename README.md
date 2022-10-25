@@ -16,11 +16,13 @@ wget https://github.com/datafuselabs/databend/releases/download/v0.8.77-nightly/
 
 Replace `v0.8.77` to any version you want to test.
 
+**Note: Now can use `prepare` script to do step 1 and step 2, like `./prepare --version v0.8.79`**
+
 ### step 3: start docker test containers
 run `cd docker; ./bin/up`, it will start two types of container:
 
-* node container: which will run the meta service, by default there will be 3 node container, if need to change the node count, modify the `bin/up` script.
-* console container: which will run the jepsen test script.
+* node container: which will run the meta service, by default there will be 3 node container, if need to change the node count, modify the `bin/up` script.node container will be named by prefix `jepsen_n`, like `jepsen_n1`.
+* console container: which will run the jepsen test script, console container will be named by `jepsen_control`.
 
 After start the containers, run `docker ps` will see 4 containers:
 ```
@@ -36,14 +38,14 @@ CONTAINER ID   IMAGE                      COMMAND                  CREATED      
 Run `./bin/console` in `docker` directory, it will enter the control container, and use the cmd like below to test metasrv:
 
 ```
-lein run test --nodes jepsen-n1,jepsen-n2,jepsen-n3 --time-limit 5 --concurrency 5 --version v0.8.77 --packages_dir=/var/jepsen/shared/packages/
+./scripts/start-test --node-count 1 --version v0.8.79
 ```
 
-* --nodes: the node hostname which will run the metasrv, seperated by comma.
-* --time-limt: test time of duration, in Seconds.
+* --node-count: Test Node count(Default 3).
+* --time-limt: Test time limit(Default 5), in Seconds.
 * --concurrency: concurrency test client count.
+* --concurrency: Test concurrency(Default 5).
 * --version: the package version download in `step 2`.
-* --packages_dir: Package directory, MUST not to modified.
 
 Note that the more `nodes`,`time-limit` and `concurrency`, the more test result, it will make the checker hard to analyse. In now time, the default arguments is enough.
 

@@ -175,10 +175,10 @@
       :read (let [value (-> conn
           (.readMsg (str (Long/valueOf k)))
           parse-long)]
-        (assoc op :type :ok, :value (independent/tuple k value)))      
+        (if (= value -1) (assoc op :type :ok, :value nil) 
+                         (assoc op :type :ok, :value (independent/tuple k value))))
 
       :write (do 
-        (info "write_msg: " k (type k) v (type v))
         (.writeMsg conn (str (Long/valueOf k)) (str (Integer/valueOf v)))
         (assoc op :type :ok)))))        
 
@@ -200,13 +200,12 @@
      :db   (db (:version opts) (:packages_dir opts))
      :nemesis         (nemesis/partition-random-halves)
      :client (Client. nil)
-     :checker   (checker/compose
-         {:perf  (checker/perf)
-         :indep (independent/checker
-             (checker/compose
-              {:linear   (checker/linearizable {:model (model/cas-register)
-                  :algorithm :linear})
-              :timeline (timeline/html)}))})
+     :checker (checker/compose
+                {:perf   (checker/perf)
+                 :linear (checker/linearizable
+                           {:model     (model/cas-register)
+                            :algorithm :linear})
+                 :timeline (timeline/html)})
      :generator  (->> (independent/concurrent-generator
            (:concurrency opts) 
            (range)

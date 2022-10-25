@@ -209,10 +209,13 @@ public class MetasrvClient {
       // response = mBlockingStub.withOption(TOKEN, mToken).readMsg(request);
       String data = response.getData();
       readMsgResp resp = gson.fromJson(data, readMsgResp.class);
+      if (resp == null) {
+        return "-1";
+      }
       return new String(resp.data);
     } catch (StatusRuntimeException e) {
       logger.log(Level.WARNING, "readMsg RPC failed: {0}", e.getStatus());
-      return "";
+      return "-1";
     }
   }
 

@@ -1,0 +1,59 @@
+#!/bin/bash
+
+VERSION=""
+HELP=0
+POSITIONAL=()
+BUILD_ONLY=0
+
+while [[ $# -gt 0 ]]
+do
+    key="$1"
+
+    case $key in
+        --help)
+            HELP=1
+            shift # past argument
+            ;;
+        --build-only)
+            BUILD_ONLY=1
+            shift # past argument
+            ;;            
+        --version)
+            VERSION=$2
+            shift # past argument
+            shift # past value
+            ;;
+        *)
+            POSITIONAL+=("$1")
+            ERROR "unknown option $1"
+            shift # past argument
+            ;;
+    esac
+done
+
+if [ "${#POSITIONAL[@]}" -gt 0 ]; then
+  set -- "${POSITIONAL[@]}" # restore positional parameters
+fi
+
+if [ "${HELP}" -eq 1 ]; then
+    echo "Usage: $0 [OPTION]"
+    echo "  --help                                                Display this message"
+    echo "  --build-only                                          Build metasrv Java client only"
+    echo "  --version                                             Test databend package version"
+    exit 0
+fi
+
+if [ -z "${VERSION}" ]; then
+  echo "Version MUST NOT be empty"
+  exit -1
+fi
+
+if [ "${BUILD_ONLY}" -eq 0 ]; then
+  echo "Downloading ${VERSION} databend package..."
+  echo "https://github.com/datafuselabs/databend/releases/download/$VERSION-nightly/databend-$VERSION-nightly-x86_64-unknown-linux-musl.tar.gz -P docker/packages" | xargs wget 
+else
+  echo "Build meta java client only, no need to download databend package."
+fi
+
+echo "Build meta java client"
+cd metasrv-java-client; gradle build; cp build/libs/*jar ../resources

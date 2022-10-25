@@ -18,6 +18,8 @@ if [ ! -f ~/.ssh/known_hosts ]; then
     done <~/nodes
 fi
 
+chmod +x /jepsen/scripts/*
+
 # TODO: assert that SSH_PRIVATE_KEY==~/.ssh/id_rsa
 
 cat <<EOF
