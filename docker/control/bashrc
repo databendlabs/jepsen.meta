@@ -11,7 +11,7 @@ You are currently in the base dir of the git repo for Jepsen.
 If you modify the core jepsen library make sure you "lein install" it so other tests can access.
 
 To run a test:
-   cd etcd && lein run test --concurrency 10
+   ./scripts/start-test --node-count 3 --version v0.8.79 (replace 'v0.8.79' to the version you test)
 EOF
 
 cd /jepsen

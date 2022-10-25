@@ -15,6 +15,7 @@ import io.grpc.ClientCall;
 import io.grpc.ClientInterceptor;
 import io.grpc.ForwardingClientCall;
 import io.grpc.ManagedChannel;
+import io.grpc.ConnectivityState;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
@@ -29,19 +30,20 @@ public class MetasrvClient {
   private static final Logger logger = Logger.getLogger(MetasrvClient.class.getName());
 
   private static final int PORT = 9191;
-  /*
-   * static final Metadata.Key<byte[]> TOKEN =
-   * Metadata.Key.of("auth-token-bin", Metadata.BINARY_BYTE_MARSHALLER);
-   * ;
-   */
 
   static final CallOptions.Key<ByteString> TOKEN = CallOptions.Key.create("auth-token-bin");
-  private final ManagedChannel mChannel;
-  private final MetaServiceGrpc.MetaServiceBlockingStub mBlockingStub;
-  private final MetaServiceGrpc.MetaServiceStub mAsyncStub;
+  private ManagedChannel mChannel;
+  private MetaServiceGrpc.MetaServiceBlockingStub mBlockingStub;
+  private MetaServiceGrpc.MetaServiceStub mAsyncStub;
   private ByteString mToken = null;
   static private byte[] mTokenBytes = null;
   private Metadata mMetadata = null;
+  private String mUsername = null;
+  private String mPassword = null;
+  private long mVersion = 0;
+  private int mRetryCount = 0;
+  private String mHost = null;
+  private int mPort = 0;
 
   static class MetasrvClientInterceptor implements ClientInterceptor {
     @Override
@@ -99,13 +101,16 @@ public class MetasrvClient {
     this(ManagedChannelBuilder.forAddress(host, port)
         .usePlaintext()
         .intercept(new MetasrvClientInterceptor())
-        .build());
+        .build(), host, port);
   }
 
-  MetasrvClient(ManagedChannel channel) {
+  MetasrvClient(ManagedChannel channel, String host, int port) {
     this.mChannel = channel;
     mBlockingStub = MetaServiceGrpc.newBlockingStub(channel);
     mAsyncStub = MetaServiceGrpc.newStub(channel);
+    this.mHost = host;
+    this.mPort = port;
+    this.mRetryCount = 0;
   }
 
   public boolean isAuthed() {
@@ -123,14 +128,54 @@ public class MetasrvClient {
       mMetadata = new Metadata();
       mTokenBytes = new byte[mToken.size()];
       mToken.copyTo(mTokenBytes, 0, 0, mToken.size());
-      // mMetadata.put(TOKEN, bytes);
     }
     return mToken != null;
+  }
+
+  private boolean reconnect() {
+    if (mRetryCount > 1) {
+      logger.info("Re-connnect to " + mHost + " failed");
+      return false;
+    }
+    logger.info("Try to re-connnect to " + mHost + "...");
+    try {
+      int cnt = 3;
+      while (cnt >= 0) {
+        if (mChannel.getState(true) == ConnectivityState.READY) {
+          break;
+        }
+        Thread.sleep(100);
+        cnt -= 1;
+      }
+    } catch (InterruptedException e) {
+      logger.log(Level.WARNING, "isAuthed failed: " + e.toString());
+    }
+    if (mChannel.getState(true) != ConnectivityState.READY) {
+      logger.log(Level.INFO, "re-connect to " + mHost + " failed: " + mChannel.getState(true).toString());
+      return false;
+    }
+
+    mRetryCount += 1;
+    mChannel = ManagedChannelBuilder.forAddress(mHost, mPort)
+        .usePlaintext()
+        .intercept(new MetasrvClientInterceptor())
+        .build();
+    mBlockingStub = MetaServiceGrpc.newBlockingStub(mChannel);
+    mAsyncStub = MetaServiceGrpc.newStub(mChannel);
+    boolean ret = handshake(mUsername, mPassword, mVersion);
+
+    if (ret) {
+      mRetryCount = 0;
+    }
+    return ret;
   }
 
   public boolean handshake(String username, String password, long version) {
     Auth auth = Auth.newBuilder().setUsername(username).setPassword(password).build();
     logger.info("handshake json:" + auth.toString());
+    mUsername = username;
+    mPassword = password;
+    mVersion = version;
 
     StreamObserver<HandshakeResponse> responseObserver = new StreamObserver<HandshakeResponse>() {
       @Override
@@ -185,7 +230,12 @@ public class MetasrvClient {
       response = mBlockingStub.writeMsg(request);
       // response = mBlockingStub.withOption(TOKEN, mToken).writeMsg(request);
     } catch (StatusRuntimeException e) {
-      logger.log(Level.WARNING, "writeMsg RPC failed: {0}", e.getStatus());
+      if (!reconnect()) {
+        logger.log(Level.WARNING, "writeMsg RPC failed: {0}", e.getStatus());
+        mRetryCount = 0;
+        return;
+      }
+      writeMsg(key, value);
       return;
     }
   }
@@ -214,8 +264,12 @@ public class MetasrvClient {
       }
       return new String(resp.data);
     } catch (StatusRuntimeException e) {
-      logger.log(Level.WARNING, "readMsg RPC failed: {0}", e.getStatus());
-      return "-1";
+      if (!reconnect()) {
+        logger.log(Level.WARNING, "readMsg RPC failed: {0}", e.getStatus());
+        mRetryCount = 0;
+        return "-1";
+      }
+      return readMsg(key);
     }
   }
 
