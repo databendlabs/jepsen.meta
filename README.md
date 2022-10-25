@@ -41,10 +41,9 @@ Run `./bin/console` in `docker` directory, it will enter the control container, 
 ./scripts/start-test --node-count 1 --version v0.8.79
 ```
 
-* --node-count: Test Node count(Default 3).
+* --node-count: Test Node count(Default 3), note that node count CAN NOT bigger the node container count.
 * --time-limt: Test time limit(Default 5), in Seconds.
-* --concurrency: concurrency test client count.
-* --concurrency: Test concurrency(Default 5).
+* --concurrency: Concurrency test client count(Default 5).
 * --version: the package version download in `step 2`.
 
 Note that the more `nodes`,`time-limit` and `concurrency`, the more test result, it will make the checker hard to analyse. In now time, the default arguments is enough.
