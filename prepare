@@ -43,11 +43,6 @@ if [ "${HELP}" -eq 1 ]; then
     exit 0
 fi
 
-if [ -z "${VERSION}" ]; then
-  echo "Version MUST NOT be empty"
-  exit -1
-fi
-
 if [ "${BUILD_ONLY}" -eq 0 ]; then
   echo "Downloading ${VERSION} databend package..."
   echo "https://github.com/datafuselabs/databend/releases/download/$VERSION-nightly/databend-$VERSION-nightly-x86_64-unknown-linux-musl.tar.gz -P docker/packages" | xargs wget 

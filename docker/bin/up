@@ -94,6 +94,7 @@ if [ "${HELP}" -eq 1 ]; then
     echo "  --daemon                                              Runs docker-compose in the background"
     echo "  --dev                                                 Mounts dir at host's JEPSEN_ROOT to /jepsen on jepsen-control container, syncing files for development"
     echo "  --compose PATH                                        Path to an additional docker-compose yml config."
+    echo "  --node-count node                                     Test node container count."
     echo "To provide multiple additional docker-compose args, set the COMPOSE var directly, with the -f flag. Ex: COMPOSE=\"-f FILE_PATH_HERE -f ANOTHER_PATH\" ./up.sh --dev"
     exit 0
 fi

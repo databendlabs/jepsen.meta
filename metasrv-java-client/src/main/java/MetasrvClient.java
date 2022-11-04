@@ -231,7 +231,7 @@ public class MetasrvClient {
       // response = mBlockingStub.withOption(TOKEN, mToken).writeMsg(request);
     } catch (StatusRuntimeException e) {
       if (!reconnect()) {
-        logger.log(Level.WARNING, "writeMsg RPC failed: {0}", e.getStatus());
+        logger.log(Level.WARNING, "writeMsg RPC failed: connect to meta " + mHost + " failed");
         mRetryCount = 0;
         return;
       }
@@ -265,7 +265,7 @@ public class MetasrvClient {
       return new String(resp.data);
     } catch (StatusRuntimeException e) {
       if (!reconnect()) {
-        logger.log(Level.WARNING, "readMsg RPC failed: {0}", e.getStatus());
+        logger.log(Level.WARNING, "readMsg RPC failed: connect to meta " + mHost + " failed");
         mRetryCount = 0;
         return "-1";
       }
